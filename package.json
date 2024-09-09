@@ -1,0 +1,19 @@
+{
+  "name": "iso-vcf",
+  "version": "1.0.0",
+  "description": "A small, dependency-free vCard file parser and generator",
+  "author": "Loris Sigrist",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/mod.js",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LorisSigrist/iso-vcf"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.5"
+  }
+}
