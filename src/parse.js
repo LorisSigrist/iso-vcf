@@ -60,11 +60,20 @@ function parseLines(lines) {
         };
         break;
       }
+
+      case "N": {
+        break;
+      }
+
       default: {
         currentVCard[line.name.toLowerCase()] = {
           params: {
             ...valueParameter(line.params, ["text"]),
             ...anyParameter(line.params),
+            ...languageParameter(line.params),
+            ...labelParameter(line.params),
+            ...calscaleParameter(line.params),
+            ...tzParameter(line.params),
           },
           value: line.value,
         };
@@ -118,6 +127,77 @@ function anyParameter(lexedParams) {
     }
   }
   return anyParams;
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").LanguageParameter}
+ */
+function languageParameter(lexedParams) {
+  const language = lexedParams["LANGUAGE"];
+  if (!language || language.length == 0) {
+    return { language: undefined };
+  }
+
+  if (language.length !== 1)
+    throw new Error("Only one 'LANGUAGE' parameter is allowed");
+  return { language: language[0] };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").LabelParameter}
+ */
+function labelParameter(lexedParams) {
+  const label = lexedParams["LABEL"];
+  if (!label || label.length == 0) {
+    return { label: undefined };
+  }
+
+  if (label.length !== 1)
+    throw new Error("Only one 'LABEL' parameter is allowed");
+  return { label: label[0] };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").CalscaleParameter}
+ */
+function calscaleParameter(lexedParams) {
+  const calscale = lexedParams["CALSCALE"];
+  if (!calscale || calscale.length == 0) {
+    return { calscale: undefined };
+  }
+
+  if (calscale.length !== 1)
+    throw new Error("Only one 'CALSCALE' parameter is allowed");
+  const value = calscale[0];
+
+  if (
+    value !== "gregorian" &&
+    !value.startsWith("x-") &&
+    !value.startsWith("X-")
+  ) {
+    throw new Error(
+      "CALSCALE parameter must be 'gregorian' or start with 'x-' or 'X-'"
+    );
+  }
+
+  return { calscale: value };
+}
+
+/**
+ * @param { Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").TZParameter}
+ */
+function tzParameter(lexedParams) {
+  const tz = lexedParams["TZ"];
+  if (!tz || tz.length == 0) {
+    return { tz: undefined };
+  }
+
+  if (tz.length !== 1) throw new Error("Only one 'TZ' parameter is allowed");
+  return { tz: tz[0] };
 }
 
 /**
