@@ -183,7 +183,7 @@ export const supportedVersions = /** @type {const} */ ["4.0"];
 // Property Parameter Values
 
 /**
- * @typedef {{ [key: xName]: string }} AnyParameter
+ * @typedef {{ [key: xName]: string[] }} AnyParameter
  */
 
 /**

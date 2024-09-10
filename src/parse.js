@@ -9,6 +9,7 @@ import { lex } from "./lex.js";
 export function parse(input) {
   const lines = lex(input);
   const cards = parseLines(lines);
+  return cards;
 }
 
 /**
@@ -24,7 +25,8 @@ function parseLines(lines) {
 
   for (const line of lines) {
     if (line.name === "BEGIN") {
-      if(currentVCard !== undefined) throw new Error("Cannot BEGIN Vcard before previous one was closed");
+      if (currentVCard !== undefined)
+        throw new Error("Cannot BEGIN Vcard before previous one was closed");
       if (line.value.toUpperCase() !== "VCARD")
         throw new Error("The 'BEGIN' property must have a value of 'VCARD'");
 
@@ -33,7 +35,7 @@ function parseLines(lines) {
     }
 
     // unless the line was a BEGIN there must be a current vCard
-    if(!currentVCard) throw new Error("No vCard in progress");
+    if (!currentVCard) throw new Error("No vCard in progress");
     if (line.name === "END") {
       if (line.value.toUpperCase() !== "VCARD")
         throw new Error("The 'END' property must have a value of 'VCARD'");
@@ -46,42 +48,88 @@ function parseLines(lines) {
     }
 
     switch (line.name) {
-      case "FN": {
-        currentVCard.fn = {
-          params: {},
-          value: line.value,
-        };
-        break;
-      }
       case "VERSION": {
-        if(line.value !== "4.0") throw new Error("Only vCard version 4.0 is supported");
+        if (line.value !== "4.0")
+          throw new Error("Only vCard version 4.0 is supported");
         currentVCard.version = {
-          params: {},
+          params: {
+            ...valueParameter(line.params, ["text"]),
+            ...anyParameter(line.params),
+          },
           value: line.value,
         };
         break;
       }
-
-      case "N": {
-
+      default: {
+        currentVCard[line.name.toLowerCase()] = {
+          params: {
+            ...valueParameter(line.params, ["text"]),
+            ...anyParameter(line.params),
+          },
+          value: line.value,
+        };
       }
     }
   }
 
   // the line should have ended the vCard
-  if(currentVCard) throw new Error("Incomplete vCard");
+  if (currentVCard) throw new Error("Incomplete vCard");
   return cards;
 }
 
+/**
+ * @template {import("./types.js").ValueParameterValue} T
+ *
+ * @param {Record<string, string[]>} lexedParams
+ * @param {T[]} allowed
+ *
+ * @returns {import("./types.js").ValueParameter<T>}
+ */
+function valueParameter(lexedParams, allowed) {
+  const lexedValue = lexedParams["VALUE"];
+  if (!lexedValue || lexedValue.length == 0) {
+    return { value: undefined };
+  }
+
+  // there can only be one valueParameter
+  if (lexedValue.length !== 1)
+    throw new Error("Only one 'VALUE' parameter is allowed");
+
+  const value = lexedValue[0];
+  if (!allowed.includes(value))
+    throw new Error(`'VALUE' parameter must be one of ${allowed.join(", ")}`);
+
+  return {
+    value: value,
+  };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").AnyParameter}
+ */
+function anyParameter(lexedParams) {
+  // any-params start with x- or X-
+  /** @type {import("./types.js").AnyParameter} */
+  const anyParams = {};
+  for (const key in lexedParams) {
+    if (key.startsWith("X-") || key.startsWith("x-")) {
+      anyParams[key] = lexedParams[key];
+    }
+  }
+  return anyParams;
+}
 
 /**
  * Checks if a partial vCard has all the required properties
- * 
+ *
  * @param {Partial<import("./types.js").vCard>} vCard
  * @return {vCard is import("./types.js").vCard}
  */
 function isCompleteVCard(vCard) {
   const requiredProperties = ["fn", "version"];
-  const complete = requiredProperties.every(prop => vCard[prop] !== undefined);
+  const complete = requiredProperties.every(
+    (prop) => vCard[prop] !== undefined
+  );
   return complete;
 }
