@@ -1,9 +1,9 @@
 /**
  * @typedef {object} ContentLine
- * @property {string} [group]
- * @property {string} name
- * @property {[string, string][]} params
- * @property {string} value
+ * @property {string} [group] optionally the property's group (rarely used feature)
+ * @property {string} name The normalized-uppercase name of the property (names are case-insensitive according to the spec)
+ * @property {[string, string[]][]} params Key-value[] pairs
+ * @property {string} value The raw string of the property's value
  */
 
 /**
@@ -81,7 +81,7 @@ function lexContentLine(line) {
 
   return {
     group,
-    name,
+    name: name.toUpperCase(),
     params: parsedParams,
     value,
   };

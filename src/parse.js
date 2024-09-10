@@ -24,6 +24,7 @@ function parseLines(lines) {
 
   for (const line of lines) {
     if (line.name === "BEGIN") {
+      if(currentVCard !== undefined) throw new Error("Cannot BEGIN Vcard before previous one was closed");
       if (line.value.toUpperCase() !== "VCARD")
         throw new Error("The 'BEGIN' property must have a value of 'VCARD'");
 
@@ -37,9 +38,8 @@ function parseLines(lines) {
       if (line.value.toUpperCase() !== "VCARD")
         throw new Error("The 'END' property must have a value of 'VCARD'");
 
-      const isComplete = isCompleteVCard(currentVCard);
-      if (!isComplete) throw new Error("Incomplete vCard");
-      else cards.push(currentVCard);
+      if (isCompleteVCard(currentVCard)) cards.push(currentVCard);
+      else throw new Error("Incomplete vCard");
 
       currentVCard = undefined;
       continue;
@@ -73,16 +73,6 @@ function parseLines(lines) {
   return cards;
 }
 
-
-/**
- * @template {import("./types.js").ValueParameterValue} T
- * @param {import("./lex.js").ContentLine} line
- * @param {T[]} allowed
- * @returns {import("./types.js").ValueParameter<T>}
- */
-function valueProperty(line, allowed) {
-    
-} 
 
 /**
  * Checks if a partial vCard has all the required properties

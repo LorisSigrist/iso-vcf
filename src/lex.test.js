@@ -39,7 +39,7 @@ describe("lexing", () => {
         },
         {
             group: undefined,
-            name: "Note",
+            name: "NOTE",
             params: [],
             value: "This is a long note that spans multiple lines."
         },
@@ -71,6 +71,29 @@ describe("lexing", () => {
             name: "END",
             params: [],
             value: "VCARD"
+        }])
+    })
+
+    it("normalizes property names to uppercase", ()=>{
+        const file = "begin:vcard\r\nfn:John Doe\r\nend:vcard";
+        const ast = lex(file);
+        expect(ast).toEqual([{
+            group: undefined,
+            name: "BEGIN",
+            params: [],
+            value: "vcard"
+        },
+        {
+            group: undefined,
+            name: "FN",
+            params: [],
+            value: "John Doe"
+        },
+        {
+            group: undefined,
+            name: "END",
+            params: [],
+            value: "vcard"
         }])
     })
 
