@@ -14,6 +14,7 @@
     "url": "https://github.com/LorisSigrist/iso-vcf"
   },
   "devDependencies": {
+    "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   }
 }

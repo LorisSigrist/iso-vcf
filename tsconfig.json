@@ -11,6 +11,6 @@
         "allowArbitraryExtensions": false,
         "allowImportingTsExtensions": false,
         "allowUnreachableCode": false,
-        "strict": true
+        "noFallthroughCasesInSwitch": true
     }
 }

@@ -8,34 +8,90 @@ import { lex } from "./lex.js";
  */
 export function parse(input) {
   const lines = lex(input);
-  const cards = groupIntoCards(lines);
+  const cards = parseLines(lines);
 }
 
 /**
- * @param {import("./lex.js").ContentLine[]} ast
+ * @param {import("./lex.js").ContentLine[]} lines
+ * @returns {import("./types.js").vCard[]}
  */
-function groupIntoCards(ast) {
+function parseLines(lines) {
+  /** @type {import("./types.js").vCard[]} */
   const cards = [];
 
-  /** @type {import("./lex.js").ContentLine[]} */
-  let currentCard = [];
+  /** @type {Partial<import("./types.js").vCard | undefined>} */
+  let currentVCard = undefined;
 
-  for (const line of ast) {
-    currentCard.push(line);
-    if (line.name === "END" && line.value.toUpperCase() === "VCARD") {
-      cards.push(currentCard);
-      currentCard = [];
+  for (const line of lines) {
+    if (line.name === "BEGIN") {
+      if (line.value.toUpperCase() !== "VCARD")
+        throw new Error("The 'BEGIN' property must have a value of 'VCARD'");
+
+      currentVCard = {};
+      continue;
+    }
+
+    // unless the line was a BEGIN there must be a current vCard
+    if(!currentVCard) throw new Error("No vCard in progress");
+    if (line.name === "END") {
+      if (line.value.toUpperCase() !== "VCARD")
+        throw new Error("The 'END' property must have a value of 'VCARD'");
+
+      const isComplete = isCompleteVCard(currentVCard);
+      if (!isComplete) throw new Error("Incomplete vCard");
+      else cards.push(currentVCard);
+
+      currentVCard = undefined;
+      continue;
+    }
+
+    switch (line.name) {
+      case "FN": {
+        currentVCard.fn = {
+          params: {},
+          value: line.value,
+        };
+        break;
+      }
+      case "VERSION": {
+        if(line.value !== "4.0") throw new Error("Only vCard version 4.0 is supported");
+        currentVCard.version = {
+          params: {},
+          value: line.value,
+        };
+        break;
+      }
+
+      case "N": {
+
+      }
     }
   }
 
-  for (const card of cards) {
-    if (cards[0][0].name !== "BEGIN" || cards[0][0].value.toUpperCase() !== "VCARD") {
-      throw new Error("Expected BEGIN:VCARD");
-    }
-  }
-
+  // the line should have ended the vCard
+  if(currentVCard) throw new Error("Incomplete vCard");
   return cards;
 }
 
 
+/**
+ * @template {import("./types.js").ValueParameterValue} T
+ * @param {import("./lex.js").ContentLine} line
+ * @param {T[]} allowed
+ * @returns {import("./types.js").ValueParameter<T>}
+ */
+function valueProperty(line, allowed) {
+    
+} 
 
+/**
+ * Checks if a partial vCard has all the required properties
+ * 
+ * @param {Partial<import("./types.js").vCard>} vCard
+ * @return {vCard is import("./types.js").vCard}
+ */
+function isCompleteVCard(vCard) {
+  const requiredProperties = ["fn", "version"];
+  const complete = requiredProperties.every(prop => vCard[prop] !== undefined);
+  return complete;
+}
