@@ -2,7 +2,7 @@
  * @typedef {object} ContentLine
  * @property {string} [group] optionally the property's group (rarely used feature)
  * @property {string} name The normalized-uppercase name of the property (names are case-insensitive according to the spec)
- * @property {[string, string[]][]} params Key-value[] pairs
+ * @property {Record<string, string[]>} params Key-value[] pairs
  * @property {string} value The raw string of the property's value
  */
 
@@ -71,10 +71,11 @@ function lexContentLine(line) {
   /** @type {[string, string][]} */
   const parsedParams = [];
   if (params) {
-    const entries = params.split(";").filter(Boolean);
+    const entries = params.split(";").filter(Boolean); // remove empty paramss (startin and ending)
 
     for (const entry of entries) {
       const [key, value] = entry.split("=");
+      entries.reduce((acc, curr) => {});
       parsedParams.push([key, value ?? ""]);
     }
   }
@@ -85,4 +86,74 @@ function lexContentLine(line) {
     params: parsedParams,
     value,
   };
+}
+
+/**
+ * Parses an escaped property value into an array of unescaped strings.
+ *
+ * Escaped values:
+ * - "," must be escaped with a backslash. If it isn't it will be used to split the value into multiple strings
+ * - "\" must be escaped with another backslash
+ *
+ * @param {string} raw
+ * @returns {string[]}
+ */
+function parsePropertyValue(raw) {
+  const parts = raw.split("\\");
+  for (const part of parts) {
+    // if the part contains an unescaped , or ; split at it.
+  }
+}
+
+/**
+ * @param {Record<string, string[]>} params
+ * @param {string} param
+ * @returns
+ */
+function createParams(params, param) {
+  let [paramName, paramValue] = param.split("=");
+
+  if (paramValue == null || paramValue === "") {
+    paramValue = paramName;
+    paramName = "type";
+  }
+
+  if (paramName === "type") {
+    // remove quotes - THIS IS NOT SPEC COMPLIANT
+    if (
+      paramValue[0] === '"' &&
+      paramValue[paramValue.length - 1] === '"' &&
+      paramValue.indexOf(",") !== -1
+    ) {
+      paramValue = paramValue.slice(1, -1);
+    }
+
+    paramValue
+      .toLowerCase()
+      .split(",")
+      .forEach(function (value) {
+        set(params, paramName, value);
+      });
+
+    return params;
+  }
+
+  set(params, paramName, paramValue);
+  return params;
+}
+
+/**
+ * Updates the property-object
+ *
+ * @param {Record<string, string[]>} object
+ * @param {string} key
+ * @param {string} value
+ */
+function set(object, key, value) {
+  const existingValues = object[key];
+  if (existingValues) {
+    existingValues.push(value);
+  } else {
+    object[key] = [value];
+  }
 }
