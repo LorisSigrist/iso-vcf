@@ -54,7 +54,7 @@ function removeEmptyLines(input) {
 }
 
 const LINE_REGEX =
-  /^(?:(?<group>[a-zA-Z0-9\-]+)\.)?(?<name>[a-zA-Z0-9\-]+)(?<params>;.*)*:(?<value>.*)$/;
+  /^(?:(?<group>[a-zA-Z0-9\-]+)\.)?(?<name>[a-zA-Z0-9\-]+)(?<params>;[^:]*)*:(?<value>.*)$/;
 
 /**
  * Takes in an (unfolded) line and returns it's parsed representation
@@ -67,18 +67,8 @@ function lexContentLine(line) {
   if (!match || !match.groups) throw new Error("Could not parse line");
 
   const { group, name, params, value } = match.groups;
-
-  /** @type {[string, string][]} */
-  const parsedParams = [];
-  if (params) {
-    const entries = params.split(";").filter(Boolean); // remove empty paramss (startin and ending)
-
-    for (const entry of entries) {
-      const [key, value] = entry.split("=");
-      entries.reduce((acc, curr) => {});
-      parsedParams.push([key, value ?? ""]);
-    }
-  }
+  const paramEntries = params ? params.split(";").filter(Boolean) : [];
+  const parsedParams = paramEntries.reduce(accumulateParams, {});
 
   return {
     group,
@@ -106,11 +96,11 @@ function parsePropertyValue(raw) {
 }
 
 /**
- * @param {Record<string, string[]>} params
+ * @param {Record<string, string[]>} existingParams
  * @param {string} param
  * @returns
  */
-function createParams(params, param) {
+function accumulateParams(existingParams, param) {
   let [paramName, paramValue] = param.split("=");
 
   if (paramValue == null || paramValue === "") {
@@ -118,7 +108,7 @@ function createParams(params, param) {
     paramName = "type";
   }
 
-  if (paramName === "type") {
+  if (paramName.toLowerCase() === "type") {
     // remove quotes - THIS IS NOT SPEC COMPLIANT
     if (
       paramValue[0] === '"' &&
@@ -132,18 +122,18 @@ function createParams(params, param) {
       .toLowerCase()
       .split(",")
       .forEach(function (value) {
-        set(params, paramName, value);
+        set(existingParams, paramName, value);
       });
 
-    return params;
+    return existingParams;
   }
 
-  set(params, paramName, paramValue);
-  return params;
+  set(existingParams, paramName, paramValue);
+  return existingParams;
 }
 
 /**
- * Updates the property-object
+ * Updates the params. If there are already params with the same name it will add the value to the list
  *
  * @param {Record<string, string[]>} object
  * @param {string} key
