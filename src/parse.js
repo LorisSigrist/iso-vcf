@@ -75,6 +75,7 @@ function parseLines(lines) {
             ...languageParameter(line.params),
             ...anyParameter(line.params),
             ...sortAsParameter(line.params),
+            ...altidParameter(line.params),
           },
           value: {
             surnames: family.split(","),
@@ -82,9 +83,29 @@ function parseLines(lines) {
             additionalNames: middle.split(","),
             honorificPrefixes: prefix.split(","),
             honorificSuffixes: suffix.split(","),
-          }
+          },
+        };
+        break;
+      }
+
+      case "GENDER": {
+        const [sex, identity] = line.value.split(";");
+
+        /** @type {"M" | "F" | "O" | "N"| "U" | undefined} */
+        let normalizedSex = undefined;
+        if (sex) {
+          const knownSexes = /** @type {const} */ (["M", "F", "O", "N", "U"]); // male, female, other, not applicable, unknown
+          if (!knownSexes.includes(sex)) throw new Error("Unknown gender");
+          normalizedSex = sex;
         }
 
+        currentVCard.gender = {
+          params: {
+            ...valueParameter(line.params, ["text"]),
+            ...anyParameter(line.params),
+          },
+          value: { sex: normalizedSex, identity: identity || undefined },
+        };
         break;
       }
 
@@ -98,6 +119,7 @@ function parseLines(lines) {
             ...calscaleParameter(line.params),
             ...tzParameter(line.params),
             ...sortAsParameter(line.params),
+            ...altidParameter(line.params),
           },
           value: line.value,
         };
@@ -225,14 +247,29 @@ function tzParameter(lexedParams) {
 }
 
 /**
- * 
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").AltIDParameter}
+ */
+function altidParameter(lexedParams) {
+  const altid = lexedParams["ALTID"];
+  if (!altid || altid.length == 0) {
+    return { altid: undefined };
+  }
+
+  if (altid.length !== 1)
+    throw new Error("Only one 'ALTID' parameter is allowed");
+  return { altid: altid[0] };
+}
+
+/**
+ *
  * @param {Record<string, string[]>} lexedParams
  * @returns {import("./types.js").SortAsParameter}
  */
 function sortAsParameter(lexedParams) {
   return {
     sortAs: lexedParams["SORT-AS"]?.join(""),
-  }
+  };
 }
 
 /**
