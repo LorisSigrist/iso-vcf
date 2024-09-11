@@ -204,11 +204,11 @@ export const supportedVersions = /** @type {const} */ ["4.0"];
  */
 
 /**
- * @typedef {{ type?: TypeParameterValue  }} TypeParameter
+ * @typedef {{ type?: TypeParameterValue[]  }} TypeParameter
  */
 
 /**
- * @typedef {{ type?: TelTypeParameterValue }} TelTypeParameter
+ * @typedef {{ type?: TelTypeParameterValue[] }} TelTypeParameter
  */
 
 /**

@@ -49,6 +49,8 @@ function parseLines(lines) {
 
     switch (line.name) {
       case "VERSION": {
+        if (currentVCard.version)
+          throw new Error("Duplicate VERSION parameter");
         if (line.value !== "4.0")
           throw new Error("Only vCard version 4.0 is supported");
         currentVCard.version = {
@@ -61,7 +63,26 @@ function parseLines(lines) {
         break;
       }
 
+      case "FN": {
+        if (currentVCard.fn) throw new Error("Duplicate FN parameter");
+        currentVCard.fn = {
+          params: {
+            ...valueParameter(line.params, ["text"]),
+            ...typeParameter(line.params),
+            ...languageParameter(line.params),
+            ...altidParameter(line.params),
+            ...pidParameter(line.params),
+            ...prefParameter(line.params),
+            ...anyParameter(line.params),
+          },
+          value: line.value,
+        };
+
+        break;
+      }
+
       case "N": {
+        if (currentVCard.n) throw new Error("Duplicate N parameter");
         const parts = line.value.split(";");
         if (parts.length !== 5)
           throw new Error(
@@ -89,6 +110,7 @@ function parseLines(lines) {
       }
 
       case "GENDER": {
+        if (currentVCard.gender) throw new Error("Duplicate GENDER parameter");
         const [sex, identity] = line.value.split(";");
 
         /** @type {"M" | "F" | "O" | "N"| "U" | undefined} */
@@ -112,6 +134,7 @@ function parseLines(lines) {
       }
 
       case "BDAY": {
+        if (currentVCard.bday) throw new Error("Duplicate BDAY parameter");
         currentVCard.bday = {
           // @ts-ignore
           params: {
@@ -124,11 +147,11 @@ function parseLines(lines) {
         };
 
         // if the type is text, then allow the language parameter
-        if(currentVCard.bday.params.value === "text") {
+        if (currentVCard.bday.params.value === "text") {
           currentVCard.bday.params = {
             ...currentVCard.bday.params,
             ...languageParameter(line.params),
-          }
+          };
         }
 
         break;
@@ -158,6 +181,9 @@ function parseLines(lines) {
             ...tzParameter(line.params),
             ...sortAsParameter(line.params),
             ...altidParameter(line.params),
+            ...pidParameter(line.params),
+            ...prefParameter(line.params),
+            ...typeParameter(line.params),
           },
           value: line.value,
         };
@@ -289,6 +315,35 @@ function tzParameter(lexedParams) {
 
 /**
  * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").TypeParameter}
+ */
+function typeParameter(lexedParams) {
+  const types = lexedParams["TYPE"];
+  if (!types || types.length == 0) {
+    return { type: undefined };
+  }
+
+  /** @type {import("./types.js").TypeParameterValue[]} */
+  const normalizedTypes = [];
+  for (const type of types) {
+    if (type.startsWith("x-") || type.startsWith("X-")) {
+      normalizedTypes.push(type);
+    } else if (type.toLowerCase() === "home") {
+      normalizedTypes.push("home");
+    } else if (type.toLowerCase() === "work") {
+      normalizedTypes.push("work");
+    } else {
+      continue; // unknown tpyes
+    }
+  }
+
+  return {
+    type: normalizedTypes,
+  };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
  * @returns {import("./types.js").AltIDParameter}
  */
 function altidParameter(lexedParams) {
@@ -298,8 +353,44 @@ function altidParameter(lexedParams) {
   }
 
   if (altid.length !== 1)
-    throw new Error("Only one 'ALTID' parameter is allowed");
+    throw new Error("'ALTID' parameter can only have one value");
   return { altid: altid[0] };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns { import("./types.js").PIDParameter}
+ */
+function pidParameter(lexedParams) {
+  const pid = lexedParams["PID"];
+  if (!pid || pid.length == 0) {
+    return { pid: undefined };
+  }
+
+  if (pid.length !== 1)
+    throw new Error("'PID' parameter can only have one value");
+  return { pid: pid[0] };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns { import("./types.js").PrefParameter}
+ */
+function prefParameter(lexedParams) {
+  const pref = lexedParams["PID"];
+  if (pref === undefined || pref.length == 0) {
+    return { pref: undefined };
+  }
+
+  if (pref.length !== 1)
+    throw new Error("'PREF' parameter can only have one value");
+
+  const parsedPref = parseInt(pref[0]);
+  if (parsedPref < 0 || parsedPref > 100 || Number.isNaN(parsedPref)) {
+    throw new Error("'PREF' parameter must be an integer between 0 and 100");
+  }
+
+  return { pref: parsedPref };
 }
 
 /**
