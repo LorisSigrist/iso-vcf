@@ -62,6 +62,29 @@ function parseLines(lines) {
       }
 
       case "N": {
+        const parts = line.value.split(";");
+        if (parts.length !== 5)
+          throw new Error(
+            "N parameter value should have 5 parts, only got " + parts.length
+          );
+        const [family, given, middle, prefix, suffix] = parts;
+
+        currentVCard.n = {
+          params: {
+            ...valueParameter(line.params, ["text"]),
+            ...languageParameter(line.params),
+            ...anyParameter(line.params),
+            ...sortAsParameter(line.params),
+          },
+          value: {
+            surnames: family.split(","),
+            givenNames: given.split(","),
+            additionalNames: middle.split(","),
+            honorificPrefixes: prefix.split(","),
+            honorificSuffixes: suffix.split(","),
+          }
+        }
+
         break;
       }
 
@@ -74,6 +97,7 @@ function parseLines(lines) {
             ...labelParameter(line.params),
             ...calscaleParameter(line.params),
             ...tzParameter(line.params),
+            ...sortAsParameter(line.params),
           },
           value: line.value,
         };
@@ -198,6 +222,17 @@ function tzParameter(lexedParams) {
 
   if (tz.length !== 1) throw new Error("Only one 'TZ' parameter is allowed");
   return { tz: tz[0] };
+}
+
+/**
+ * 
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").SortAsParameter}
+ */
+function sortAsParameter(lexedParams) {
+  return {
+    sortAs: lexedParams["SORT-AS"]?.join(""),
+  }
 }
 
 /**
