@@ -64,7 +64,7 @@ const LINE_REGEX =
  */
 function lexContentLine(line) {
   const match = line.match(LINE_REGEX);
-  if (!match || !match.groups) throw new Error("Could not parse line");
+  if (!match || !match.groups) throw new Error("Could not parse line: " + line);
 
   const { group, name, params, value } = match.groups;
   const paramEntries = params ? params.split(";").filter(Boolean) : [];
