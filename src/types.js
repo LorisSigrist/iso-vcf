@@ -504,7 +504,7 @@ export const supportedVersions = /** @type {const} */ ["4.0"];
  * @property {NProperty} [n] Structude name
  * @property {NicknameProperty[]} [nickname] Specify the text corresponding to the nickname of the object the vCard represents.
  * @property {PhotoProperty[]} [photo] URIs to photos that correspond to the object the vCard represents
- * @property {BdayProperty} [bday] Specify the birth date of the object the vCard represents
+ * @property {BdayProperty<"date-and-or-time" | "text">} [bday] Specify the birth date of the object the vCard represents
  * @property {AnniversaryProperty} [anniversary] The date of marriage, or equivalent, of the object the vCard represents
  * @property {GenderProperty} [gender] The gender of the object the vCard represents
  *

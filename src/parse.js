@@ -95,7 +95,9 @@ function parseLines(lines) {
         let normalizedSex = undefined;
         if (sex) {
           const knownSexes = /** @type {const} */ (["M", "F", "O", "N", "U"]); // male, female, other, not applicable, unknown
+          // @ts-ignore
           if (!knownSexes.includes(sex)) throw new Error("Unknown gender");
+          // @ts-ignore
           normalizedSex = sex;
         }
 
@@ -109,10 +111,46 @@ function parseLines(lines) {
         break;
       }
 
+      case "BDAY": {
+        currentVCard.bday = {
+          // @ts-ignore
+          params: {
+            ...valueParameter(line.params, ["date-and-or-time", "text"]),
+            ...altidParameter(line.params),
+            ...calscaleParameter(line.params),
+            ...anyParameter(line.params),
+          },
+          value: line.value,
+        };
+
+        // if the type is text, then allow the language parameter
+        if(currentVCard.bday.params.value === "text") {
+          currentVCard.bday.params = {
+            ...currentVCard.bday.params,
+            ...languageParameter(line.params),
+          }
+        }
+
+        break;
+      }
+
       default: {
         currentVCard[line.name.toLowerCase()] = {
           params: {
-            ...valueParameter(line.params, ["text"]),
+            ...valueParameter(line.params, [
+              "text",
+              "boolean",
+              "date",
+              "date-and-or-time",
+              "date-time",
+              "float",
+              "integer",
+              "language-tag",
+              "time",
+              "timestamp",
+              "uri",
+              "utc-offset",
+            ]),
             ...anyParameter(line.params),
             ...languageParameter(line.params),
             ...labelParameter(line.params),
@@ -151,10 +189,12 @@ function valueParameter(lexedParams, allowed) {
     throw new Error("Only one 'VALUE' parameter is allowed");
 
   const value = lexedValue[0];
+  // @ts-ignore
   if (!allowed.includes(value))
     throw new Error(`'VALUE' parameter must be one of ${allowed.join(", ")}`);
 
   return {
+    // @ts-ignore
     value: value,
   };
 }
@@ -229,6 +269,7 @@ function calscaleParameter(lexedParams) {
     );
   }
 
+  // @ts-ignore
   return { calscale: value };
 }
 
