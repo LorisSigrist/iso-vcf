@@ -157,6 +157,45 @@ function parseLines(lines) {
         break;
       }
 
+      case "ADR": {
+        currentVCard.adr = currentVCard.adr || [];
+
+        const [
+          postOfficeBox,
+          extendedAddress,
+          streetAddress,
+          locality,
+          region,
+          postalCode,
+          countryName,
+        ] = line.value.split(";");
+
+        currentVCard.adr.push({
+          params: {
+            ...valueParameter(line.params, ["text"]),
+            ...labelParameter(line.params),
+            ...languageParameter(line.params),
+            ...geoParameter(line.params),
+            ...tzParameter(line.params),
+            ...altidParameter(line.params),
+            ...pidParameter(line.params),
+            ...prefParameter(line.params),
+            ...typeParameter(line.params),
+            ...anyParameter(line.params),
+          },
+          value: {
+            postOfficeBox,
+            extendedAddress,
+            streetAddress,
+            locality,
+            region,
+            postalCode,
+            countryName,
+          },
+        });
+        break;
+      }
+
       default: {
         currentVCard[line.name.toLowerCase()] = {
           params: {
@@ -311,6 +350,21 @@ function tzParameter(lexedParams) {
 
   if (tz.length !== 1) throw new Error("Only one 'TZ' parameter is allowed");
   return { tz: tz[0] };
+}
+
+/**
+ *
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").GeoParameter}
+ */
+function geoParameter(lexedParams) {
+  const geo = lexedParams["GEO"];
+  if (!geo || geo.length == 0) {
+    return { geo: undefined };
+  }
+
+  if (geo.length !== 1) throw new Error("Only one 'GEO' parameter is allowed");
+  return { geo: geo[0] };
 }
 
 /**
