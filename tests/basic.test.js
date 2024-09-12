@@ -83,4 +83,29 @@ describe("parse - basic", () => {
       },
     ]);
   });
+
+  it("parses parameters with quoted lists", () => {
+    const vCard =
+      'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:John Doe\r\nTEL;VALUE=uri;PREF=1;TYPE="voice,home":tel:+1-555-555-5555;ext=5555\r\nEND:VCARD';
+    const parsed = parse(vCard);
+    expect(parsed).toEqual([
+      {
+        fn: {
+          params: {},
+          value: "John Doe",
+        },
+        tel: [{
+          params: {
+            type: ["voice", "home"],
+            value: "uri",
+          },
+          value: "tel:+1-555-555-5555;ext=5555",
+        }],
+        version: {
+          params: {},
+          value: "4.0",
+        },
+      },
+    ]);
+  });
 });

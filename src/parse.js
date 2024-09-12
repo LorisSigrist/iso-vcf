@@ -196,6 +196,25 @@ function parseLines(lines) {
         break;
       }
 
+      case "TEL": {
+        currentVCard.tel = currentVCard.tel || [];
+
+        const valueParam = valueParameter(line.params, ["text", "uri"])
+        currentVCard.tel.push({
+          params: {
+            ...valueParam,
+            ...telTypeParameter(line.params),
+            ...(valueParam.value !== "uri"? {} : {}),
+            ...pidParameter(line.params),
+            ...prefParameter(line.params),
+            ...altidParameter(line.params),
+            ...anyParameter(line.params)
+          },
+          value: line.value
+        });
+        break;
+      }
+
       default: {
         currentVCard[line.name.toLowerCase()] = {
           params: {
@@ -386,6 +405,36 @@ function typeParameter(lexedParams) {
       normalizedTypes.push("home");
     } else if (type.toLowerCase() === "work") {
       normalizedTypes.push("work");
+    } else {
+      continue; // unknown tpyes
+    }
+  }
+
+  return {
+    type: normalizedTypes,
+  };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").TelTypeParameter}
+ */
+function telTypeParameter(lexedParams) {
+  const types = lexedParams["TYPE"];
+  if (!types || types.length == 0) {
+    return { type: undefined };
+  }
+
+  const KNOWN_TEL_TYPES = ["text" , "voice" , "fax" , "cell" , "video" , "pager" , "textphone", "home","work"]
+
+  /** @type {import("./types.js").TelTypeParameterValue[]} */
+  const normalizedTypes = [];
+  for (const type of types) {
+    if (type.startsWith("x-") || type.startsWith("X-")) {
+      normalizedTypes.push(type);
+    } 
+    else if (KNOWN_TEL_TYPES.includes(type.toLowerCase())) {
+      normalizedTypes.push(type.toLowerCase());
     } else {
       continue; // unknown tpyes
     }

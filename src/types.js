@@ -510,7 +510,7 @@ export const supportedVersions = /** @type {const} */ ["4.0"];
  *
  * @property {ADRProperty[]} [adr] Delivery address
  *
- * @property {TelProperty[]} [tel] Telephone numbers
+ * @property {TelProperty<"text" | "uri">[]} [tel] Telephone numbers
  * @property {EmailProperty[]} [email]
  * @property {ImppProperty[]} [impp] the URI for instant messaging and presence protocol communications
  * @property {LangProperty[]} [lang] The language(s) that may be used for contacting the entity associated with the vCard.
