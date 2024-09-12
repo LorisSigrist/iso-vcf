@@ -200,11 +200,15 @@ function parseLines(lines) {
         currentVCard.tel = currentVCard.tel || [];
 
         const valueParam = valueParameter(line.params, ["text", "uri"])
+        let mediaTypeParam = {}
+        if(valueParam.value === "uri") {
+          mediaTypeParam = mediaTypeParameter(line.params)
+        }
         currentVCard.tel.push({
           params: {
             ...valueParam,
             ...telTypeParameter(line.params),
-            ...(valueParam.value !== "uri"? {} : {}),
+            ...mediaTypeParam,
             ...pidParameter(line.params),
             ...prefParameter(line.params),
             ...altidParameter(line.params),
@@ -505,6 +509,22 @@ function sortAsParameter(lexedParams) {
   return {
     sortAs: lexedParams["SORT-AS"]?.join(""),
   };
+}
+
+/**
+ * @param {Record<string, string[]>} lexedParams
+ * @returns {import("./types.js").MediaTypeParameter}
+ */
+function mediaTypeParameter(lexedParams) {
+  const mediaType = lexedParams["MEDIATYPE"];
+  if (mediaType === undefined || mediaType.length == 0) {
+    return { mediaType: undefined };
+  }
+
+  if (mediaType.length !== 1)
+    throw new Error("'MEDIATYPE' parameter can only have one value");
+
+  return { mediaType: mediaType[0] };
 }
 
 /**
